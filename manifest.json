@@ -1,7 +1,7 @@
 {
-  "name": "Rhoads Show Inventory",
-  "short_name": "Show Inventory",
-  "description": "Scan, sell, and track show inventory — works offline.",
+  "name": "Burning Halo — Show Inventory",
+  "short_name": "Burning Halo",
+  "description": "Burning Halo — scan, sell, and track show inventory. Works offline.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

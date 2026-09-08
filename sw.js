@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const CACHE_VERSION = 'v3';
+const CACHE_VERSION = 'v4';
 const APP_CACHE = 'rsi-app-' + CACHE_VERSION;
 const RUNTIME_CACHE = 'rsi-runtime-' + CACHE_VERSION;
 
@@ -27,6 +27,7 @@ const APP_SHELL = [
   'js/export-import.js',
   'js/app.js',
   'manifest.json',
+  'icons/logo.png',
   'icons/icon-192.png',
   'icons/icon-512.png',
   'icons/icon-maskable-512.png'

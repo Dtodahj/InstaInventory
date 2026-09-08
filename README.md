@@ -6,6 +6,33 @@ No backend, no database server — everything lives in the browser's IndexedDB o
 whatever device you're using, and the export/import file is how data moves between
 devices or into your main system later.
 
+Currently branded and deployed for **Burning Halo** (comics · cards · collectibles) —
+see "Rebranding" below if you ever reuse this for a different shop or event.
+
+## Rebranding
+
+The app itself is generic; only a handful of spots carry the current shop's branding,
+all called out with a comment block at the top of `index.html`. To rebrand:
+
+1. Replace `icons/logo.png` with a new square logo — ideally 512×512 or larger, with a
+   solid/opaque background (it's used as-is, with no transparency handling).
+2. Regenerate the three PWA icon files from it: `icons/icon-192.png`,
+   `icons/icon-512.png` (plain resizes of the new logo), and
+   `icons/icon-maskable-512.png` (the same logo, but scaled down to roughly 72% and
+   centered on a same-color square canvas — Android's adaptive-icon mask can crop
+   right up to the edge of a maskable icon, so its actual artwork needs that safe-zone
+   padding, unlike the other two). Any image editor works, or a free online PWA icon
+   generator.
+3. Update `<title>`, the `apple-mobile-web-app-title` meta tag, and the topbar's
+   `<img>`/shop-name text in `index.html` (each marked `BRAND:` or inside the
+   `BRANDING` comment block right under `<head>`).
+4. Update `name`/`short_name`/`description` in `manifest.json` to match.
+5. Bump `CACHE_VERSION` in `sw.js` (any app-shell file change needs this — see the
+   Technical Documentation for why) and deploy as usual.
+
+No build step and nothing dynamic — it's a handful of static files to swap/edit, all
+listed above.
+
 ## Deploying it (required before it's usable on a phone)
 
 This has to be served over **real HTTPS** — camera access does not work over a plain

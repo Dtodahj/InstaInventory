@@ -3,15 +3,30 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
-<title>Rhoads Show Inventory</title>
+
+<!-- ===================================================================
+     BRANDING — everything needed to rebrand this app lives in these few
+     spots. To rebrand:
+       1. Replace icons/logo.png with a new square logo (512x512+,
+          solid/opaque background — it's used as-is, no transparency).
+       2. Regenerate icons/icon-192.png, icons/icon-512.png, and
+          icons/icon-maskable-512.png from it (any image tool, or a free
+          online PWA icon generator — the maskable one needs extra
+          padding around the art; see README).
+       3. Update the <title>, the "apple-mobile-web-app-title" meta, and
+          the topbar markup below (look for "BRAND:").
+       4. Update "name"/"short_name" in manifest.json to match.
+     No build step, no other files involved.
+     =================================================================== -->
+<title>Burning Halo — Show Inventory</title>
 <meta name="theme-color" content="#0b0f14">
-<meta name="description" content="Scan, sell, and track show inventory offline.">
+<meta name="description" content="Burning Halo — scan, sell, and track show inventory offline.">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Show Inventory">
+<meta name="apple-mobile-web-app-title" content="Burning Halo">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -19,8 +34,10 @@
 
   <header class="topbar">
     <div class="topbar-title">
+      <!-- BRAND: logo file + shop name -->
+      <img class="brand-logo" src="icons/logo.png" alt="Burning Halo logo">
+      <span class="brand-name">Burning Halo</span>
       <span class="dot" id="online-dot" title="Online"></span>
-      Rhoads Show Inventory
     </div>
   </header>
 
