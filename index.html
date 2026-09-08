@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>Rhoads Show Inventory</title>
+<meta name="theme-color" content="#0b0f14">
+<meta name="description" content="Scan, sell, and track show inventory offline.">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Show Inventory">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+
+  <header class="topbar">
+    <div class="topbar-title">
+      <span class="dot" id="online-dot" title="Online"></span>
+      Rhoads Show Inventory
+    </div>
+  </header>
+
+  <main id="main">
+
+    <!-- ===================== INVENTORY VIEW ===================== -->
+    <section class="view" id="view-inventory" data-view="inventory">
+      <div class="view-toolbar">
+        <input type="search" id="inventory-search" placeholder="Search inventory…" autocomplete="off">
+        <button class="icon-btn" id="btn-scan-to-sell" aria-label="Scan to sell">
+          <svg viewBox="0 0 24 24" width="22" height="22"><path d="M4 8V5a1 1 0 011-1h3M20 8V5a1 1 0 00-1-1h-3M4 16v3a1 1 0 001 1h3m12-4v3a1 1 0 01-1 1h-3M4 12h16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+      <div class="list" id="inventory-list" role="list"></div>
+      <p class="empty-state" id="inventory-empty" hidden>No items yet. Tap + to add or scan your first item.</p>
+    </section>
+
+    <!-- ===================== SALES VIEW ===================== -->
+    <section class="view" id="view-sales" data-view="sales" hidden>
+      <div class="view-toolbar">
+        <div class="view-toolbar-title">Sales by day</div>
+      </div>
+      <div class="list" id="sales-days" role="list"></div>
+      <p class="empty-state" id="sales-empty" hidden>No sales recorded yet.</p>
+    </section>
+
+    <!-- ===================== DATA VIEW ===================== -->
+    <section class="view" id="view-data" data-view="data" hidden>
+      <div class="data-section">
+        <h2>Export</h2>
+        <p class="hint">Save a file to move data to another device, or into your main system.</p>
+        <button class="btn btn-block" id="btn-export-json">Export everything (JSON)</button>
+        <button class="btn btn-block btn-secondary" id="btn-export-inv-csv">Export inventory (CSV)</button>
+        <button class="btn btn-block btn-secondary" id="btn-export-sales-csv">Export sales (CSV)</button>
+      </div>
+      <div class="data-section">
+        <h2>Import</h2>
+        <p class="hint">Load a previously exported JSON file. New items are merged in; if something conflicts, you'll be asked how to resolve it.</p>
+        <label class="btn btn-block btn-secondary" for="import-file-input">Choose file to import…</label>
+        <input type="file" id="import-file-input" accept="application/json,.json" hidden>
+      </div>
+      <div class="data-section">
+        <h2>About this device</h2>
+        <p class="hint" id="storage-summary">—</p>
+      </div>
+    </section>
+
+  </main>
+
+  <nav class="tabbar" id="tabbar">
+    <button class="tab active" data-target="inventory">
+      <svg viewBox="0 0 24 24" width="24" height="24"><path d="M4 4h16v4H4zM4 10h16v10H4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <span>Inventory</span>
+    </button>
+    <button class="tab" data-target="sales">
+      <svg viewBox="0 0 24 24" width="24" height="24"><path d="M4 20V10M10 20V4M16 20v-7M20 20V13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <span>Sales</span>
+    </button>
+    <button class="tab" data-target="data">
+      <svg viewBox="0 0 24 24" width="24" height="24"><path d="M12 3v13m0 0l-4-4m4 4l4-4M5 21h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>Data</span>
+    </button>
+  </nav>
+
+  <button class="fab" id="fab-add" aria-label="Add item">
+    <svg viewBox="0 0 24 24" width="28" height="28"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+  </button>
+
+  <!-- ===================== ADD ACTION SHEET ===================== -->
+  <div class="sheet-backdrop" id="sheet-add-action-backdrop" hidden>
+    <div class="sheet" id="sheet-add-action">
+      <div class="sheet-handle"></div>
+      <h2>Add item</h2>
+      <button class="btn btn-block btn-large" id="btn-scan-to-add">Scan barcode</button>
+      <button class="btn btn-block btn-large btn-secondary" id="btn-manual-add">Enter manually</button>
+      <button class="btn btn-block btn-plain" data-close-sheet>Cancel</button>
+    </div>
+  </div>
+
+  <!-- ===================== SELL ACTION SHEET (from list) ===================== -->
+  <div class="sheet-backdrop" id="sheet-sell-action-backdrop" hidden>
+    <div class="sheet" id="sheet-sell-action">
+      <div class="sheet-handle"></div>
+      <h2>Sell / manage item</h2>
+      <button class="btn btn-block btn-large" id="btn-sell-item">Sell</button>
+      <button class="btn btn-block btn-large btn-secondary" id="btn-edit-item">Edit details</button>
+      <button class="btn btn-block btn-plain" data-close-sheet>Cancel</button>
+    </div>
+  </div>
+
+  <!-- ===================== SCAN TO SELL ENTRY (FAB alt) ===================== -->
+  <!-- reached via long-press or the Sell button in the toolbar; simplest: a second small button -->
+
+  <!-- ===================== MANUAL ADD / EDIT FORM ===================== -->
+  <div class="sheet-backdrop" id="sheet-form-backdrop" hidden>
+    <div class="sheet sheet-tall" id="sheet-form">
+      <div class="sheet-handle"></div>
+      <h2 id="form-title">Add item</h2>
+      <form id="item-form">
+        <label class="field">
+          <span>Barcode / SKU</span>
+          <input type="text" id="field-barcode" inputmode="text" autocomplete="off" required>
+        </label>
+        <label class="field">
+          <span>Description</span>
+          <input type="text" id="field-description" autocomplete="off">
+        </label>
+        <div class="field-row">
+          <label class="field">
+            <span>Quantity</span>
+            <input type="number" id="field-quantity" inputmode="numeric" min="0" step="1" value="1" required>
+          </label>
+          <label class="field">
+            <span>Price ($)</span>
+            <input type="number" id="field-price" inputmode="decimal" min="0" step="0.01" value="0.00" required>
+          </label>
+        </div>
+        <p class="hint" id="form-hint"></p>
+        <button type="submit" class="btn btn-block btn-large" id="form-submit">Save item</button>
+        <button type="button" class="btn btn-block btn-plain" data-close-sheet>Cancel</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===================== SELL FORM ===================== -->
+  <div class="sheet-backdrop" id="sheet-sell-backdrop" hidden>
+    <div class="sheet" id="sheet-sell">
+      <div class="sheet-handle"></div>
+      <h2>Sell item</h2>
+      <div class="sell-item-info">
+        <div class="sell-item-desc" id="sell-description">—</div>
+        <div class="sell-item-barcode" id="sell-barcode">—</div>
+        <div class="sell-item-onhand" id="sell-onhand">—</div>
+      </div>
+      <div class="stepper">
+        <button type="button" class="stepper-btn" id="qty-minus" aria-label="Decrease quantity">−</button>
+        <input type="number" id="sell-quantity" inputmode="numeric" min="1" value="1">
+        <button type="button" class="stepper-btn" id="qty-plus" aria-label="Increase quantity">+</button>
+      </div>
+      <label class="field">
+        <span>Sale price (each, $)</span>
+        <input type="number" id="sell-price" inputmode="decimal" min="0" step="0.01">
+      </label>
+      <p class="sell-total">Total: <span id="sell-total">$0.00</span></p>
+      <p class="hint error-hint" id="sell-error" hidden></p>
+      <button type="button" class="btn btn-block btn-large" id="btn-confirm-sell">Confirm sale</button>
+      <button type="button" class="btn btn-block btn-plain" data-close-sheet>Cancel</button>
+    </div>
+  </div>
+
+  <!-- ===================== SCANNER OVERLAY ===================== -->
+  <div class="scanner-overlay" id="scanner-overlay" hidden>
+    <video id="scanner-video" playsinline autoplay muted></video>
+    <div class="scanner-frame"></div>
+    <div class="scanner-topbar">
+      <span id="scanner-mode-label">Scan to add</span>
+      <button class="scanner-close" id="scanner-close" aria-label="Close scanner">✕</button>
+    </div>
+    <p class="scanner-status" id="scanner-status">Point the camera at a barcode…</p>
+  </div>
+
+  <!-- ===================== IMPORT PREVIEW / CONFLICTS ===================== -->
+  <div class="sheet-backdrop" id="sheet-import-backdrop" hidden>
+    <div class="sheet sheet-tall" id="sheet-import">
+      <div class="sheet-handle"></div>
+      <h2>Import preview</h2>
+      <div id="import-summary" class="import-summary"></div>
+      <div id="import-conflicts" class="import-conflicts"></div>
+      <button type="button" class="btn btn-block btn-large" id="btn-confirm-import">Import</button>
+      <button type="button" class="btn btn-block btn-plain" data-close-sheet>Cancel</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" hidden></div>
+
+</div>
+
+<script src="js/db.js"></script>
+<script src="js/scanner.js"></script>
+<script src="js/export-import.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
