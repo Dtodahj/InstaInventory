@@ -3,7 +3,9 @@
  *
  * Two object stores:
  *   inventory: keyPath "barcode"
- *     { barcode, description, quantity, price, cost, category, condition, notes, updated_at }
+ *     { barcode, description, quantity, price, cost, category, condition, notes, photo, updated_at }
+ *     — `photo` is a compressed JPEG data URI (or '' if none), resized client-side
+ *       before storage so a device photo doesn't blow up IndexedDB/export size.
  *   sales:     keyPath "id"
  *     { id, barcode, description, quantity, sale_price, cost, sold_at }
  *     — `cost` here is a snapshot of the item's cost at the moment it was
@@ -102,6 +104,7 @@
               category: item.category || existing.category || '',
               condition: item.condition || existing.condition || '',
               notes: item.notes || existing.notes || '',
+              photo: item.photo || existing.photo || '',
               updated_at: now
             };
           } else {
@@ -114,6 +117,7 @@
               category: item.category || '',
               condition: item.condition || '',
               notes: item.notes || '',
+              photo: item.photo || '',
               updated_at: now
             };
           }

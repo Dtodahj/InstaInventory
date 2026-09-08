@@ -48,6 +48,12 @@ without browser chrome.
   sell screen (so it stays out of view at the counter); it only surfaces as a lifetime
   profit figure in the Data tab, and as a per-unit snapshot on each sale so profit stays
   accurate even if you later change an item's cost.
+- **Photo (detail view only)** — attach a photo to an item from the add/edit screen
+  (camera or existing photo, whichever your browser offers). It's resized and
+  compressed client-side before it's stored, so it stays reasonably small in IndexedDB
+  and in JSON exports. It's intentionally kept out of the compact inventory list, the
+  sell sheet, and CSV exports — it only shows up when you open an item's own detail
+  screen — so scanning through the list at a show stays fast.
 - **Sell an item** — scan, or tap it in the list, then set quantity and sale price
   (defaults to the item's listed price, editable per sale). Selling the last unit
   removes it from the on-hand list; the sale itself stays in history forever.
@@ -72,7 +78,8 @@ without browser chrome.
   "exported_at": "2026-09-08T14:30:00Z",
   "inventory": [
     {"barcode": "036000291452", "description": "...", "quantity": 3, "price": 12.00,
-     "cost": 6.00, "category": "Comics", "condition": "Near Mint", "notes": "1st printing"}
+     "cost": 6.00, "category": "Comics", "condition": "Near Mint", "notes": "1st printing",
+     "photo": "data:image/jpeg;base64,..."}
   ],
   "sales": [
     {"id": "…uuid…", "barcode": "036000291452", "description": "...", "quantity": 1,
@@ -84,9 +91,11 @@ without browser chrome.
 This matches the shape you sketched, with a few additions on top: each sale carries an
 `id` (a UUID) so re-importing the same export twice is safe and never creates duplicate
 sales, and both inventory items and sales carry `cost` (plus `category`/`condition`/
-`notes` on inventory items). These are all extra fields, not a structural change —
-ignorable by anything else that reads this file, and it should generalize fine to a
-future "design your own database" import.
+`notes`/`photo` on inventory items). These are all extra fields, not a structural
+change — ignorable by anything else that reads this file, and it should generalize
+fine to a future "design your own database" import. `photo`, when present, is a
+`data:image/jpeg;base64,...` string, already resized/compressed — no separate image
+files to keep track of.
 
 ## Honesty about what has and hasn't actually been tested
 
@@ -108,6 +117,10 @@ what I could verify myself, so here's the real breakdown:
 - The category dropdown (Toys/Comics/Cards/Other), searching inventory by category,
   and the cost/condition/notes fields round-tripping through add, edit, sell, and CSV
   export without ever surfacing cost on the list or sell screen
+- Attaching a photo in the add/edit screen, the client-side resize/compress step
+  producing a real JPEG data URI, the photo staying out of the compact list row, the
+  sell sheet, and the CSV export, round-tripping through edit, and coming back out in
+  the JSON export
 - The service worker actually installing, actually taking over the page, and the app
   shell actually still loading with the network fully cut off, with add/sell still
   working offline

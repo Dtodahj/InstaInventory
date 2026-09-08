@@ -128,6 +128,19 @@
           <span>Description</span>
           <input type="text" id="field-description" autocomplete="off">
         </label>
+        <div class="field field-photo">
+          <span>Photo (optional)</span>
+          <div class="photo-row">
+            <div class="photo-thumb" id="photo-thumb" hidden>
+              <img id="photo-thumb-img" alt="Item photo">
+            </div>
+            <div class="photo-actions">
+              <button type="button" class="btn btn-secondary" id="btn-add-photo">Add photo</button>
+              <button type="button" class="btn btn-plain btn-photo-remove" id="btn-remove-photo" hidden>Remove photo</button>
+            </div>
+          </div>
+          <input type="file" id="field-photo-input" accept="image/*" hidden>
+        </div>
         <div class="field-row">
           <label class="field">
             <span>Category</span>

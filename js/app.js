@@ -15,7 +15,8 @@
     editBarcode: null,   // set when the form is editing an existing item
     scanMode: null,      // 'add' | 'sell'
     scanHandled: false,
-    pendingImport: null  // { plan, data }
+    pendingImport: null, // { plan, data }
+    formPhoto: ''         // data URI of the photo currently staged in the open item form
   };
 
   // ---------------------------------------------------------------------
@@ -136,6 +137,77 @@
   });
 
   // ---------------------------------------------------------------------
+  // Photo (item detail only — not shown in the compact list or sell sheet)
+  // ---------------------------------------------------------------------
+
+  // Reads the picked file, downscales it to at most maxDim on its longest
+  // side, and re-encodes as a JPEG data URI at the given quality. Keeps
+  // photos to roughly 30-100KB each instead of multi-megabyte camera
+  // originals, since they live in IndexedDB and ride along in JSON exports.
+  function readImageAsCompressedDataUrl(file, maxDim, quality) {
+    return new Promise(function (resolve, reject) {
+      const reader = new FileReader();
+      reader.onload = function () {
+        const img = new Image();
+        img.onload = function () {
+          const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+          const w = Math.max(1, Math.round(img.width * scale));
+          const h = Math.max(1, Math.round(img.height * scale));
+          const canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.onerror = function () { reject(new Error('That file could not be read as an image.')); };
+        img.src = reader.result;
+      };
+      reader.onerror = function () { reject(reader.error); };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function showPhotoPreview(dataUrl) {
+    const thumb = $('photo-thumb');
+    const img = $('photo-thumb-img');
+    const removeBtn = $('btn-remove-photo');
+    const addBtn = $('btn-add-photo');
+    if (dataUrl) {
+      img.src = dataUrl;
+      thumb.hidden = false;
+      removeBtn.hidden = false;
+      addBtn.textContent = 'Change photo';
+    } else {
+      img.src = '';
+      thumb.hidden = true;
+      removeBtn.hidden = true;
+      addBtn.textContent = 'Add photo';
+    }
+  }
+
+  $('btn-add-photo').addEventListener('click', function () {
+    $('field-photo-input').click();
+  });
+
+  $('field-photo-input').addEventListener('change', function (e) {
+    const file = e.target.files[0];
+    e.target.value = ''; // so picking the same file again still fires 'change'
+    if (!file) return;
+    readImageAsCompressedDataUrl(file, 640, 0.6).then(function (dataUrl) {
+      state.formPhoto = dataUrl;
+      showPhotoPreview(dataUrl);
+    }).catch(function (err) {
+      toast(err.message || 'Could not read that image.');
+    });
+  });
+
+  $('btn-remove-photo').addEventListener('click', function () {
+    state.formPhoto = '';
+    showPhotoPreview('');
+  });
+
+  // ---------------------------------------------------------------------
   // Add / Edit form
   // ---------------------------------------------------------------------
 
@@ -167,6 +239,7 @@
       categoryField.value = opts.item.category || '';
       conditionField.value = opts.item.condition || '';
       notesField.value = opts.item.notes || '';
+      state.formPhoto = opts.item.photo || '';
       hint.textContent = 'Editing sets these values exactly (it does not add to the current count).';
     } else {
       $('form-title').textContent = 'Add item';
@@ -181,6 +254,7 @@
         conditionField.value = opts.existing.condition || '';
         notesField.value = opts.existing.notes || '';
         qtyField.value = 1;
+        state.formPhoto = opts.existing.photo || '';
         hint.textContent = 'This barcode is already in your inventory (' + opts.existing.quantity +
           ' on hand). The quantity you enter here will be ADDED to that count.';
       } else {
@@ -191,8 +265,10 @@
         conditionField.value = '';
         notesField.value = '';
         qtyField.value = 1;
+        state.formPhoto = '';
       }
     }
+    showPhotoPreview(state.formPhoto);
     openBackdrop('sheet-form-backdrop');
     const focusTarget = (opts.mode !== 'edit' && !opts.barcode) ? barcodeField : descField;
     setTimeout(function () { focusTarget.focus(); }, 50);
@@ -213,17 +289,18 @@
     const category = $('field-category').value.trim();
     const condition = $('field-condition').value;
     const notes = $('field-notes').value.trim();
+    const photo = state.formPhoto || '';
 
     if (!barcode) { toast('Barcode is required.'); return; }
 
     const action = state.editBarcode
       ? DB.setItem({
           barcode: state.editBarcode, description: description, quantity: quantity, price: price,
-          cost: cost, category: category, condition: condition, notes: notes, updated_at: new Date().toISOString()
+          cost: cost, category: category, condition: condition, notes: notes, photo: photo, updated_at: new Date().toISOString()
         })
       : DB.addOrRestockItem({
           barcode: barcode, description: description, quantity: quantity, price: price,
-          cost: cost, category: category, condition: condition, notes: notes
+          cost: cost, category: category, condition: condition, notes: notes, photo: photo
         });
 
     action.then(function () {
@@ -485,6 +562,7 @@
         if (rec.cost) s += ', cost ' + money(rec.cost);
         if (rec.category) s += ', ' + rec.category;
         if (rec.condition) s += ', ' + rec.condition;
+        if (rec.photo) s += ', has photo';
         if (rec.description !== name) s += ' — "' + escapeHtml(rec.description) + '"';
         return s;
       };

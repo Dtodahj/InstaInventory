@@ -51,7 +51,8 @@
         inventory: inventory.map(function (i) {
           return {
             barcode: i.barcode, description: i.description, quantity: i.quantity, price: i.price,
-            cost: i.cost || 0, category: i.category || '', condition: i.condition || '', notes: i.notes || ''
+            cost: i.cost || 0, category: i.category || '', condition: i.condition || '', notes: i.notes || '',
+            photo: i.photo || ''
           };
         }),
         sales: sales.map(function (s) {
@@ -76,6 +77,8 @@
   }
 
   function exportInventoryCSV() {
+    // photo is intentionally left out of the CSV — a base64 image would make
+    // rows unreadable in a spreadsheet. It's still in the JSON export below.
     return DB.getAllInventory().then(function (inventory) {
       const csv = toCSV(inventory, ['barcode', 'description', 'category', 'condition', 'quantity', 'cost', 'price', 'notes']);
       triggerDownload('inventory-' + timestampForFilename() + '.csv', csv, 'text/csv');
@@ -103,7 +106,8 @@
   function fieldsDiffer(a, b) {
     return a.description !== b.description || a.quantity !== b.quantity || a.price !== b.price ||
       (a.cost || 0) !== (b.cost || 0) || (a.category || '') !== (b.category || '') ||
-      (a.condition || '') !== (b.condition || '') || (a.notes || '') !== (b.notes || '');
+      (a.condition || '') !== (b.condition || '') || (a.notes || '') !== (b.notes || '') ||
+      (a.photo || '') !== (b.photo || '');
   }
 
   // Builds a merge plan comparing imported data against what's on hand now.
@@ -169,6 +173,7 @@
         category: item.category || '',
         condition: item.condition || '',
         notes: item.notes || '',
+        photo: item.photo || '',
         updated_at: new Date().toISOString()
       }));
     });
@@ -188,6 +193,7 @@
           category: conflict.imported.category || '',
           condition: conflict.imported.condition || '',
           notes: conflict.imported.notes || '',
+          photo: conflict.imported.photo || '',
           updated_at: new Date().toISOString()
         };
       } else { // sum_quantity — quantities combine, everything else stays as it is locally
@@ -200,6 +206,7 @@
           category: conflict.local.category || '',
           condition: conflict.local.condition || '',
           notes: conflict.local.notes || '',
+          photo: conflict.local.photo || '',
           updated_at: new Date().toISOString()
         };
       }
