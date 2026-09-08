@@ -73,7 +73,8 @@
       const filtered = items.filter(function (i) {
         if (!q) return true;
         return (i.description || '').toLowerCase().indexOf(q) !== -1 ||
-               (i.barcode || '').toLowerCase().indexOf(q) !== -1;
+               (i.barcode || '').toLowerCase().indexOf(q) !== -1 ||
+               (i.category || '').toLowerCase().indexOf(q) !== -1;
       }).sort(function (a, b) {
         return (a.description || a.barcode).localeCompare(b.description || b.barcode);
       });
@@ -138,13 +139,6 @@
   // Add / Edit form
   // ---------------------------------------------------------------------
 
-  function populateCategoryList() {
-    DB.getAllInventory().then(function (items) {
-      const cats = [...new Set(items.map(function (i) { return i.category; }).filter(Boolean))].sort();
-      $('category-list').innerHTML = cats.map(function (c) { return '<option value="' + escapeHtml(c) + '">'; }).join('');
-    });
-  }
-
   function openItemForm(opts) {
     // opts: { mode: 'add'|'edit', barcode?: prefill, item?: existing record for edit or restock context }
     const barcodeField = $('field-barcode');
@@ -159,7 +153,6 @@
 
     state.editBarcode = null;
     hint.textContent = '';
-    populateCategoryList();
 
     if (opts.mode === 'edit') {
       state.editBarcode = opts.item.barcode;

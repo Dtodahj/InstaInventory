@@ -40,8 +40,10 @@ without browser chrome.
 - **Add an item** — scan a barcode with the camera, or enter it manually: barcode,
   description, category, condition, quantity, price, your cost, and notes. Scanning
   (or typing) a barcode that already exists adds to its current quantity rather than
-  overwriting it. Category, condition, and notes are optional — leave them blank if
-  you don't need them.
+  overwriting it. Category is a fixed dropdown (Toys, Comics, Cards, Other) so it
+  stays consistent across your inventory; condition and notes are free-form and
+  optional — leave them blank if you don't need them. The inventory search box
+  matches against category too, so typing "comics" finds everything tagged that way.
 - **Cost tracking** — an optional "your cost" field per item. It's never shown on the
   sell screen (so it stays out of view at the counter); it only surfaces as a lifetime
   profit figure in the Data tab, and as a per-unit snapshot on each sale so profit stays
@@ -103,6 +105,9 @@ what I could verify myself, so here's the real breakdown:
 - JSON export producing the documented shape; CSV export
 - Import merge logic across three scenarios: brand-new items, exact duplicates
   (skipped sales), and a real quantity/price conflict resolved through the conflict UI
+- The category dropdown (Toys/Comics/Cards/Other), searching inventory by category,
+  and the cost/condition/notes fields round-tripping through add, edit, sell, and CSV
+  export without ever surfacing cost on the list or sell screen
 - The service worker actually installing, actually taking over the page, and the app
   shell actually still loading with the network fully cut off, with add/sell still
   working offline

@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const APP_CACHE = 'rsi-app-' + CACHE_VERSION;
 const RUNTIME_CACHE = 'rsi-runtime-' + CACHE_VERSION;
 
