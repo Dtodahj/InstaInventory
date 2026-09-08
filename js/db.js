@@ -2,9 +2,14 @@
  * db.js — IndexedDB wrapper for Rhoads Show Inventory.
  *
  * Two object stores:
- *   inventory: keyPath "barcode"  { barcode, description, quantity, price, updated_at }
- *   sales:     keyPath "id"       { id, barcode, description, quantity, sale_price, sold_at }
- *              index "sold_at" (for day grouping), index "barcode"
+ *   inventory: keyPath "barcode"
+ *     { barcode, description, quantity, price, cost, category, condition, notes, updated_at }
+ *   sales:     keyPath "id"
+ *     { id, barcode, description, quantity, sale_price, cost, sold_at }
+ *     — `cost` here is a snapshot of the item's cost at the moment it was
+ *       sold (not a live reference), so profit stays accurate even if the
+ *       item's cost is edited later.
+ *     index "sold_at" (for day grouping), index "barcode"
  *
  * Everything here is promise-based. No UI logic lives in this file.
  */
@@ -93,6 +98,10 @@
               description: item.description || existing.description,
               quantity: (existing.quantity || 0) + (item.quantity || 0),
               price: typeof item.price === 'number' ? item.price : existing.price,
+              cost: typeof item.cost === 'number' ? item.cost : existing.cost || 0,
+              category: item.category || existing.category || '',
+              condition: item.condition || existing.condition || '',
+              notes: item.notes || existing.notes || '',
               updated_at: now
             };
           } else {
@@ -101,6 +110,10 @@
               description: item.description || '',
               quantity: item.quantity || 0,
               price: typeof item.price === 'number' ? item.price : 0,
+              cost: typeof item.cost === 'number' ? item.cost : 0,
+              category: item.category || '',
+              condition: item.condition || '',
+              notes: item.notes || '',
               updated_at: now
             };
           }
@@ -165,6 +178,7 @@
       description: sale.description || '',
       quantity: sale.quantity,
       sale_price: sale.sale_price,
+      cost: typeof sale.cost === 'number' ? sale.cost : 0,
       sold_at: sale.sold_at || new Date().toISOString()
     };
     return tx('sales', 'readwrite').then(function (t) {

@@ -88,7 +88,8 @@
         row.innerHTML =
           '<div class="item-row-main">' +
             '<div class="item-row-desc">' + escapeHtml(item.description || '(no description)') + '</div>' +
-            '<div class="item-row-barcode">' + escapeHtml(item.barcode) + '</div>' +
+            '<div class="item-row-barcode">' + escapeHtml(item.barcode) +
+              (item.category ? ' · ' + escapeHtml(item.category) : '') + '</div>' +
           '</div>' +
           '<div class="item-row-side">' +
             '<div class="item-row-price">' + money(item.price) + '</div>' +
@@ -137,16 +138,28 @@
   // Add / Edit form
   // ---------------------------------------------------------------------
 
+  function populateCategoryList() {
+    DB.getAllInventory().then(function (items) {
+      const cats = [...new Set(items.map(function (i) { return i.category; }).filter(Boolean))].sort();
+      $('category-list').innerHTML = cats.map(function (c) { return '<option value="' + escapeHtml(c) + '">'; }).join('');
+    });
+  }
+
   function openItemForm(opts) {
     // opts: { mode: 'add'|'edit', barcode?: prefill, item?: existing record for edit or restock context }
     const barcodeField = $('field-barcode');
     const descField = $('field-description');
     const qtyField = $('field-quantity');
     const priceField = $('field-price');
+    const costField = $('field-cost');
+    const categoryField = $('field-category');
+    const conditionField = $('field-condition');
+    const notesField = $('field-notes');
     const hint = $('form-hint');
 
     state.editBarcode = null;
     hint.textContent = '';
+    populateCategoryList();
 
     if (opts.mode === 'edit') {
       state.editBarcode = opts.item.barcode;
@@ -157,6 +170,10 @@
       descField.value = opts.item.description || '';
       qtyField.value = opts.item.quantity;
       priceField.value = Number(opts.item.price || 0).toFixed(2);
+      costField.value = Number(opts.item.cost || 0).toFixed(2);
+      categoryField.value = opts.item.category || '';
+      conditionField.value = opts.item.condition || '';
+      notesField.value = opts.item.notes || '';
       hint.textContent = 'Editing sets these values exactly (it does not add to the current count).';
     } else {
       $('form-title').textContent = 'Add item';
@@ -166,12 +183,20 @@
       if (opts.existing) {
         descField.value = opts.existing.description || '';
         priceField.value = Number(opts.existing.price || 0).toFixed(2);
+        costField.value = Number(opts.existing.cost || 0).toFixed(2);
+        categoryField.value = opts.existing.category || '';
+        conditionField.value = opts.existing.condition || '';
+        notesField.value = opts.existing.notes || '';
         qtyField.value = 1;
         hint.textContent = 'This barcode is already in your inventory (' + opts.existing.quantity +
           ' on hand). The quantity you enter here will be ADDED to that count.';
       } else {
         descField.value = '';
         priceField.value = '0.00';
+        costField.value = '0.00';
+        categoryField.value = '';
+        conditionField.value = '';
+        notesField.value = '';
         qtyField.value = 1;
       }
     }
@@ -191,12 +216,22 @@
     const description = $('field-description').value.trim();
     const quantity = parseInt($('field-quantity').value, 10) || 0;
     const price = parseFloat($('field-price').value) || 0;
+    const cost = parseFloat($('field-cost').value) || 0;
+    const category = $('field-category').value.trim();
+    const condition = $('field-condition').value;
+    const notes = $('field-notes').value.trim();
 
     if (!barcode) { toast('Barcode is required.'); return; }
 
     const action = state.editBarcode
-      ? DB.setItem({ barcode: state.editBarcode, description: description, quantity: quantity, price: price, updated_at: new Date().toISOString() })
-      : DB.addOrRestockItem({ barcode: barcode, description: description, quantity: quantity, price: price });
+      ? DB.setItem({
+          barcode: state.editBarcode, description: description, quantity: quantity, price: price,
+          cost: cost, category: category, condition: condition, notes: notes, updated_at: new Date().toISOString()
+        })
+      : DB.addOrRestockItem({
+          barcode: barcode, description: description, quantity: quantity, price: price,
+          cost: cost, category: category, condition: condition, notes: notes
+        });
 
     action.then(function () {
       closeAllSheets();
@@ -260,8 +295,9 @@
         return;
       }
       const description = item.description;
+      const cost = item.cost || 0;
       DB.sellFromInventory(barcode, qty).then(function () {
-        return DB.addSale({ barcode: barcode, description: description, quantity: qty, sale_price: price, sold_at: new Date().toISOString() });
+        return DB.addSale({ barcode: barcode, description: description, quantity: qty, sale_price: price, cost: cost, sold_at: new Date().toISOString() });
       }).then(function () {
         closeAllSheets();
         renderInventory();
@@ -451,17 +487,23 @@
       card.className = 'conflict-card';
       card.setAttribute('data-idx', idx);
       const name = c.imported.description || c.local.description || c.barcode;
+      const describe = function (rec) {
+        let s = rec.quantity + ' on hand @ ' + money(rec.price);
+        if (rec.cost) s += ', cost ' + money(rec.cost);
+        if (rec.category) s += ', ' + rec.category;
+        if (rec.condition) s += ', ' + rec.condition;
+        if (rec.description !== name) s += ' — "' + escapeHtml(rec.description) + '"';
+        return s;
+      };
       card.innerHTML =
         '<h3>' + escapeHtml(name) + '</h3>' +
         '<div class="conflict-detail">' +
           'Barcode ' + escapeHtml(c.barcode) + '<br>' +
-          'Current: ' + c.local.quantity + ' on hand @ ' + money(c.local.price) +
-          (c.local.description !== c.imported.description ? ' — "' + escapeHtml(c.local.description) + '"' : '') + '<br>' +
-          'Imported: ' + c.imported.quantity + ' on hand @ ' + money(c.imported.price) +
-          (c.local.description !== c.imported.description ? ' — "' + escapeHtml(c.imported.description) + '"' : '') +
+          'Current: ' + describe(c.local) + '<br>' +
+          'Imported: ' + describe(c.imported) +
         '</div>' +
         '<div class="conflict-choices">' +
-          '<label class="conflict-choice"><input type="radio" name="conflict-' + idx + '" value="sum_quantity" checked> Merge: add quantities together (' + ((c.local.quantity||0) + (c.imported.quantity||0)) + ' on hand), keep current description/price</label>' +
+          '<label class="conflict-choice"><input type="radio" name="conflict-' + idx + '" value="sum_quantity" checked> Merge: add quantities together (' + ((c.local.quantity||0) + (c.imported.quantity||0)) + ' on hand), keep current details otherwise</label>' +
           '<label class="conflict-choice"><input type="radio" name="conflict-' + idx + '" value="use_imported"> Use the imported values, replacing current</label>' +
           '<label class="conflict-choice"><input type="radio" name="conflict-' + idx + '" value="keep_local"> Keep current values, ignore imported</label>' +
         '</div>';
@@ -513,9 +555,11 @@
       const inv = results[0], sales = results[1];
       const totalUnits = inv.reduce(function (s, i) { return s + i.quantity; }, 0);
       const totalRevenue = sales.reduce(function (s, sale) { return s + sale.quantity * sale.sale_price; }, 0);
+      const totalProfit = sales.reduce(function (s, sale) { return s + sale.quantity * (sale.sale_price - (sale.cost || 0)); }, 0);
       $('storage-summary').textContent =
         inv.length + ' item type(s), ' + totalUnits + ' unit(s) on hand · ' +
-        sales.length + ' sale(s) recorded, ' + money(totalRevenue) + ' lifetime · data stored only on this device.';
+        sales.length + ' sale(s) recorded, ' + money(totalRevenue) + ' lifetime revenue, ' +
+        money(totalProfit) + ' lifetime profit · data stored only on this device.';
     });
   }
 

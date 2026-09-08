@@ -110,7 +110,7 @@ button, input {
   font-weight: 600;
 }
 
-input[type="search"], input[type="text"], input[type="number"], input[type="file"] {
+input[type="search"], input[type="text"], input[type="number"], input[type="file"], select {
   font-size: 16px; /* never smaller: avoids iOS auto-zoom-on-focus */
   background: var(--surface-2);
   border: 1px solid var(--border);
@@ -121,7 +121,8 @@ input[type="search"], input[type="text"], input[type="number"], input[type="file
   color: var(--text);
 }
 input::placeholder { color: var(--text-muted); }
-input:focus { outline: 2px solid var(--accent-2); outline-offset: 1px; }
+input:focus, select:focus { outline: 2px solid var(--accent-2); outline-offset: 1px; }
+select { appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='16' height='16'%3E%3Cpath d='M6 9l6 6 6-6' fill='none' stroke='%2390a0b7' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px; }
 
 .icon-btn {
   min-width: 44px;

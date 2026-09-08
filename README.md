@@ -37,9 +37,15 @@ without browser chrome.
 
 ## What's implemented
 
-- **Add an item** — scan a barcode with the camera, or enter barcode/description/qty/price
-  manually. Scanning (or typing) a barcode that already exists adds to its current
-  quantity rather than overwriting it.
+- **Add an item** — scan a barcode with the camera, or enter it manually: barcode,
+  description, category, condition, quantity, price, your cost, and notes. Scanning
+  (or typing) a barcode that already exists adds to its current quantity rather than
+  overwriting it. Category, condition, and notes are optional — leave them blank if
+  you don't need them.
+- **Cost tracking** — an optional "your cost" field per item. It's never shown on the
+  sell screen (so it stays out of view at the counter); it only surfaces as a lifetime
+  profit figure in the Data tab, and as a per-unit snapshot on each sale so profit stays
+  accurate even if you later change an item's cost.
 - **Sell an item** — scan, or tap it in the list, then set quantity and sale price
   (defaults to the item's listed price, editable per sale). Selling the last unit
   removes it from the on-hand list; the sale itself stays in history forever.
@@ -63,19 +69,22 @@ without browser chrome.
 {
   "exported_at": "2026-09-08T14:30:00Z",
   "inventory": [
-    {"barcode": "036000291452", "description": "...", "quantity": 3, "price": 12.00}
+    {"barcode": "036000291452", "description": "...", "quantity": 3, "price": 12.00,
+     "cost": 6.00, "category": "Comics", "condition": "Near Mint", "notes": "1st printing"}
   ],
   "sales": [
-    {"id": "…uuid…", "barcode": "036000291452", "description": "...", "quantity": 1, "sale_price": 12.00, "sold_at": "2026-09-08T14:22:00Z"}
+    {"id": "…uuid…", "barcode": "036000291452", "description": "...", "quantity": 1,
+     "sale_price": 12.00, "cost": 6.00, "sold_at": "2026-09-08T14:22:00Z"}
   ]
 }
 ```
 
-This matches the shape you sketched, with one addition: each sale carries an `id`
-(a UUID) so re-importing the same export twice is safe and never creates duplicate
-sales. It's an extra field, not a structural change — ignorable by anything else that
-reads this file, and it should generalize fine to a future "design your own database"
-import.
+This matches the shape you sketched, with a few additions on top: each sale carries an
+`id` (a UUID) so re-importing the same export twice is safe and never creates duplicate
+sales, and both inventory items and sales carry `cost` (plus `category`/`condition`/
+`notes` on inventory items). These are all extra fields, not a structural change —
+ignorable by anything else that reads this file, and it should generalize fine to a
+future "design your own database" import.
 
 ## Honesty about what has and hasn't actually been tested
 

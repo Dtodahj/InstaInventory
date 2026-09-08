@@ -130,6 +130,24 @@
         </label>
         <div class="field-row">
           <label class="field">
+            <span>Category</span>
+            <input type="text" id="field-category" list="category-list" autocomplete="off" placeholder="e.g. Comics">
+            <datalist id="category-list"></datalist>
+          </label>
+          <label class="field">
+            <span>Condition</span>
+            <select id="field-condition">
+              <option value="">—</option>
+              <option value="New">New</option>
+              <option value="Like New">Like New</option>
+              <option value="Good">Good</option>
+              <option value="Fair">Fair</option>
+              <option value="Poor">Poor</option>
+            </select>
+          </label>
+        </div>
+        <div class="field-row">
+          <label class="field">
             <span>Quantity</span>
             <input type="number" id="field-quantity" inputmode="numeric" min="0" step="1" value="1" required>
           </label>
@@ -138,6 +156,14 @@
             <input type="number" id="field-price" inputmode="decimal" min="0" step="0.01" value="0.00" required>
           </label>
         </div>
+        <label class="field">
+          <span>Your cost ($) — private to this device, never shown on the sell screen</span>
+          <input type="number" id="field-cost" inputmode="decimal" min="0" step="0.01" value="0.00">
+        </label>
+        <label class="field">
+          <span>Notes</span>
+          <input type="text" id="field-notes" autocomplete="off" placeholder="e.g. signed, small tear on cover">
+        </label>
         <p class="hint" id="form-hint"></p>
         <button type="submit" class="btn btn-block btn-large" id="form-submit">Save item</button>
         <button type="button" class="btn btn-block btn-plain" data-close-sheet>Cancel</button>

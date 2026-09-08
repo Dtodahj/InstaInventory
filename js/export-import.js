@@ -49,12 +49,15 @@
       return {
         exported_at: new Date().toISOString(),
         inventory: inventory.map(function (i) {
-          return { barcode: i.barcode, description: i.description, quantity: i.quantity, price: i.price };
+          return {
+            barcode: i.barcode, description: i.description, quantity: i.quantity, price: i.price,
+            cost: i.cost || 0, category: i.category || '', condition: i.condition || '', notes: i.notes || ''
+          };
         }),
         sales: sales.map(function (s) {
           return {
             id: s.id, barcode: s.barcode, description: s.description,
-            quantity: s.quantity, sale_price: s.sale_price, sold_at: s.sold_at
+            quantity: s.quantity, sale_price: s.sale_price, cost: s.cost || 0, sold_at: s.sold_at
           };
         })
       };
@@ -74,14 +77,14 @@
 
   function exportInventoryCSV() {
     return DB.getAllInventory().then(function (inventory) {
-      const csv = toCSV(inventory, ['barcode', 'description', 'quantity', 'price']);
+      const csv = toCSV(inventory, ['barcode', 'description', 'category', 'condition', 'quantity', 'cost', 'price', 'notes']);
       triggerDownload('inventory-' + timestampForFilename() + '.csv', csv, 'text/csv');
     });
   }
 
   function exportSalesCSV() {
     return DB.getAllSales().then(function (sales) {
-      const csv = toCSV(sales, ['id', 'barcode', 'description', 'quantity', 'sale_price', 'sold_at']);
+      const csv = toCSV(sales, ['id', 'barcode', 'description', 'quantity', 'cost', 'sale_price', 'sold_at']);
       triggerDownload('sales-' + timestampForFilename() + '.csv', csv, 'text/csv');
     });
   }
@@ -98,7 +101,9 @@
   }
 
   function fieldsDiffer(a, b) {
-    return a.description !== b.description || a.quantity !== b.quantity || a.price !== b.price;
+    return a.description !== b.description || a.quantity !== b.quantity || a.price !== b.price ||
+      (a.cost || 0) !== (b.cost || 0) || (a.category || '') !== (b.category || '') ||
+      (a.condition || '') !== (b.condition || '') || (a.notes || '') !== (b.notes || '');
   }
 
   // Builds a merge plan comparing imported data against what's on hand now.
@@ -160,6 +165,10 @@
         description: item.description || '',
         quantity: item.quantity || 0,
         price: typeof item.price === 'number' ? item.price : 0,
+        cost: typeof item.cost === 'number' ? item.cost : 0,
+        category: item.category || '',
+        condition: item.condition || '',
+        notes: item.notes || '',
         updated_at: new Date().toISOString()
       }));
     });
@@ -175,14 +184,22 @@
           description: conflict.imported.description,
           quantity: conflict.imported.quantity,
           price: conflict.imported.price,
+          cost: conflict.imported.cost || 0,
+          category: conflict.imported.category || '',
+          condition: conflict.imported.condition || '',
+          notes: conflict.imported.notes || '',
           updated_at: new Date().toISOString()
         };
-      } else { // sum_quantity
+      } else { // sum_quantity — quantities combine, everything else stays as it is locally
         record = {
           barcode: conflict.barcode,
           description: conflict.local.description,
           quantity: (conflict.local.quantity || 0) + (conflict.imported.quantity || 0),
           price: conflict.local.price,
+          cost: conflict.local.cost || 0,
+          category: conflict.local.category || '',
+          condition: conflict.local.condition || '',
+          notes: conflict.local.notes || '',
           updated_at: new Date().toISOString()
         };
       }
