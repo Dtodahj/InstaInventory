@@ -81,6 +81,16 @@ without browser chrome.
   and in JSON exports. It's intentionally kept out of the compact inventory list, the
   sell sheet, and CSV exports — it only shows up when you open an item's own detail
   screen — so scanning through the list at a show stays fast.
+- **UPC auto-fill (optional, best-effort)** — when you add a genuinely new barcode
+  (scan it, or type it and tab out of the field), the app tries a free lookup against
+  [UPCitemdb](https://www.upcitemdb.com/api/)'s public trial API and pre-fills the
+  description if it finds a match — always with a toast reminding you to double-check
+  it before saving. It never touches price/cost/category. This never runs for a
+  barcode already in your inventory (your own data always wins), and if the lookup
+  fails for any reason — not found, the free tier's rate limit (100/day, 6/minute, no
+  signup), or the browser blocking the request — it fails completely silently and the
+  form behaves exactly like manual entry always has. See the honesty note in
+  `js/upc-lookup.js` for what is and isn't verified about this.
 - **Sell an item** — scan, or tap it in the list, then set quantity and sale price
   (defaults to the item's listed price, editable per sale). Selling the last unit
   removes it from the on-hand list; the sale itself stays in history forever.
@@ -154,11 +164,20 @@ what I could verify myself, so here's the real breakdown:
 - The scanner's failure path: with no internet available to fetch it, the ZXing
   library genuinely fails to load in this environment, and the app correctly shows an
   error and leaves manual entry available rather than breaking
+- The UPC auto-fill's failure path: a lookup attempt is genuinely made and genuinely
+  fails (no route out of this sandbox to api.upcitemdb.com at all), and the app
+  correctly falls back to a normal empty, manually-fillable form rather than breaking
+  — plus that it's never even attempted for a barcode already in your local inventory
 
 **NOT tested, because it requires real internet + a real camera + a real barcode,
 none of which this build environment had:**
 - Actually loading the ZXing library from its CDN
 - Actually decoding a real barcode with a real phone camera
+- Whether the UPC auto-fill actually finds a real product and fills it in — I
+  genuinely don't know whether UPCitemdb allows this cross-origin browser call
+  (their docs only show server-side examples), so this could work perfectly or could
+  silently never find anything on the live site. Either way it's designed to never
+  break the form; try adding a real, known toy barcode once and see what happens.
 
 The scanner code (`js/scanner.js`) is written against the documented `@zxing/library`
 API from training knowledge — `decodeFromConstraints` for resolution control, falling

@@ -14,7 +14,7 @@
  */
 'use strict';
 
-const CACHE_VERSION = 'v4';
+const CACHE_VERSION = 'v5';
 const APP_CACHE = 'rsi-app-' + CACHE_VERSION;
 const RUNTIME_CACHE = 'rsi-runtime-' + CACHE_VERSION;
 
@@ -24,6 +24,7 @@ const APP_SHELL = [
   'css/style.css',
   'js/db.js',
   'js/scanner.js',
+  'js/upc-lookup.js',
   'js/export-import.js',
   'js/app.js',
   'manifest.json',

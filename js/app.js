@@ -208,10 +208,44 @@
   });
 
   // ---------------------------------------------------------------------
+  // UPC auto-fill (best-effort, description only — see js/upc-lookup.js)
+  // ---------------------------------------------------------------------
+
+  let upcLookupToken = 0;
+  let lastAutoFillBarcode = null;
+
+  function maybeAutoFillFromUPC(barcode) {
+    if (!barcode || state.editBarcode) return;
+    if (barcode === lastAutoFillBarcode) return; // already tried this exact barcode this session
+    const descField = $('field-description');
+    if (descField.value.trim()) return; // never clobber something already there
+
+    DB.getInventoryItem(barcode).then(function (existing) {
+      if (existing) return; // known locally — local data always wins, no external call needed
+      if (state.editBarcode || descField.value.trim()) return; // state changed while we checked
+
+      lastAutoFillBarcode = barcode;
+      const myToken = ++upcLookupToken;
+      UPCLookup.lookup(barcode).then(function (result) {
+        if (myToken !== upcLookupToken) return; // a newer form/lookup superseded this one
+        if (!result || !result.title) return;
+        if (state.editBarcode || descField.value.trim()) return;
+        descField.value = result.title;
+        toast('Filled in from a UPC lookup — please double-check before saving.');
+      });
+    });
+  }
+
+  // ---------------------------------------------------------------------
   // Add / Edit form
   // ---------------------------------------------------------------------
 
   function openItemForm(opts) {
+    // Invalidate any UPC lookup still in flight from a previous form
+    // session so it can never land in a form the user has since reopened.
+    upcLookupToken++;
+    lastAutoFillBarcode = null;
+
     // opts: { mode: 'add'|'edit', barcode?: prefill, item?: existing record for edit or restock context }
     const barcodeField = $('field-barcode');
     const descField = $('field-description');
@@ -277,6 +311,12 @@
   $('btn-manual-add').addEventListener('click', function () {
     closeAllSheets();
     openItemForm({ mode: 'add' });
+  });
+
+  // Manual entry has no barcode to look up until the user's typed one in —
+  // try the UPC auto-fill once they tab/click away from the barcode field.
+  $('field-barcode').addEventListener('blur', function () {
+    maybeAutoFillFromUPC($('field-barcode').value.trim());
   });
 
   $('item-form').addEventListener('submit', function (e) {
@@ -414,6 +454,7 @@
     if (state.scanMode === 'add') {
       DB.getInventoryItem(text).then(function (existing) {
         openItemForm({ mode: 'add', barcode: text, existing: existing || null });
+        if (!existing) maybeAutoFillFromUPC(text);
       });
     } else if (state.scanMode === 'sell') {
       DB.getInventoryItem(text).then(function (existing) {
