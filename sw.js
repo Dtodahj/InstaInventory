@@ -14,9 +14,19 @@
  */
 'use strict';
 
-const CACHE_VERSION = 'v5';
+const CACHE_VERSION = 'v6';
 const APP_CACHE = 'rsi-app-' + CACHE_VERSION;
 const RUNTIME_CACHE = 'rsi-runtime-' + CACHE_VERSION;
+
+// Cross-origin hosts we actually want to cache-wrap (the ZXing scanner
+// library CDN, so scanning still works offline after first load). Any
+// other cross-origin request — notably the UPC lookup calls to
+// api.upcitemdb.com, which are one-off/per-barcode and never worth
+// caching — is deliberately left alone (see the fetch handler below) so
+// the browser handles it natively and any failure (including a genuine
+// CORS rejection) surfaces to the calling code with its real error
+// message intact, instead of being masked as a synthetic 504 here.
+const RUNTIME_CACHE_HOSTS = ['cdn.jsdelivr.net', 'unpkg.com'];
 
 const APP_SHELL = [
   './',
@@ -64,6 +74,7 @@ self.addEventListener('fetch', function (event) {
 
   const url = new URL(req.url);
   const isSameOrigin = url.origin === self.location.origin;
+  const isCacheableCrossOrigin = !isSameOrigin && RUNTIME_CACHE_HOSTS.indexOf(url.hostname) !== -1;
 
   if (isSameOrigin) {
     event.respondWith(
@@ -79,7 +90,7 @@ self.addEventListener('fetch', function (event) {
         return cached || networkFetch;
       })
     );
-  } else {
+  } else if (isCacheableCrossOrigin) {
     // Cross-origin (the ZXing CDN script): cache-first, populate on first
     // successful fetch, so scanning keeps working with no connection later.
     event.respondWith(
@@ -96,4 +107,8 @@ self.addEventListener('fetch', function (event) {
       })
     );
   }
+  // Any other cross-origin request (e.g. the UPC lookup API) is left
+  // completely alone — no event.respondWith() — so it goes straight to
+  // the network exactly as if there were no service worker at all, and
+  // the calling code sees the real success/failure.
 });

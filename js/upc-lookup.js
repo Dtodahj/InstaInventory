@@ -18,6 +18,12 @@
  * hand. Please try it once on the real deployed site to see whether it
  * actually finds anything — the console logs `[upc-lookup]` either way.
  *
+ * sw.js deliberately does NOT intercept this request (see
+ * RUNTIME_CACHE_HOSTS there) — it goes straight to the network exactly as
+ * if there were no service worker, so a failure here is the real, unmasked
+ * result (including a genuine CORS rejection, which the .catch() below now
+ * logs in full rather than just its message).
+ *
  * Deliberately never touches price/cost/category — only ever suggests a
  * description, which the "double-check before saving" toast in app.js
  * exists specifically to remind you to verify.
@@ -59,7 +65,10 @@
       if (timer) clearTimeout(timer);
       // Network failure, CORS rejection, timeout/abort, rate limit — all
       // land here. This is the expected/normal path if CORS isn't allowed.
-      console.info('[upc-lookup] lookup failed for ' + barcode + ' (network/CORS/rate-limit) — falling back to manual entry.', err && err.message);
+      // Logged as a full error (not just .message) so a real CORS block
+      // shows Chrome's actual "...has been blocked by CORS policy..." text
+      // in the console instead of a generic "Failed to fetch".
+      console.error('[upc-lookup] lookup failed for ' + barcode + ' — falling back to manual entry.', err);
       return null;
     });
   }
